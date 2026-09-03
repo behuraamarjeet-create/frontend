@@ -7,11 +7,13 @@ import {
   MODEL_LABEL,
   persistVerificationResult,
   runVerificationForBidder,
+  type VerificationOutcome,
 } from "@/lib/verification";
+import { runAiWorkerVerification, WORKER_MODEL_LABEL } from "@/lib/ai-worker";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function POST(
   _req: NextRequest,
@@ -27,26 +29,53 @@ export async function POST(
     return NextResponse.json({ error: "Bidder not found." }, { status: 404 });
   }
 
-  // Show a visible processing state while the (simulated) engine runs.
+  // Show a visible processing state while the AI worker runs the pipeline:
+  // fetch bidder → query 8 simulated gov registries → rule engine → score →
+  // AI summary → persist (via the Strapi-compatible adapter) → audit log.
   await db.bidder.update({ where: { id }, data: { status: "PROCESSING" } });
 
-  await new Promise((resolve) => setTimeout(resolve, 2200));
+  let outcome: VerificationOutcome;
+  let usedWorker = false;
+  try {
+    outcome = await runAiWorkerVerification(id);
+    usedWorker = true;
+  } catch (err) {
+    console.warn(
+      "[verify] AI worker unavailable, falling back to local engine:",
+      err instanceof Error ? err.message : err
+    );
+    outcome = await runVerificationForBidder(id);
+    outcome.dataSource = "LOCAL_ENGINE_FALLBACK";
+  }
 
-  const outcome = await runVerificationForBidder(id);
+  // Small floor so the PROCESSING state is perceivable in tables/badges.
+  await new Promise((resolve) => setTimeout(resolve, 600));
+
   await persistVerificationResult(id, outcome);
 
-  const audit = await db.auditEntry.create({
-    data: {
-      action: "VERIFICATION_COMPLETE",
-      message: auditMessageFor(outcome.recommendation),
-      bidderName: bidder.company,
-      bidderId: id,
-      tenderCode: bidder.tender.code,
-      score: outcome.score,
-      model: MODEL_LABEL,
-      officer: "Procurement Officer",
-    },
-  });
+  let audit;
+  if (usedWorker) {
+    // The worker already persisted the audit event through the Strapi-compatible
+    // adapter (POST /api/verification-logs) before responding — reuse it.
+    audit = await db.auditEntry.findFirst({
+      where: { bidderId: id, action: "VERIFICATION_COMPLETE" },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+  if (!audit) {
+    audit = await db.auditEntry.create({
+      data: {
+        action: "VERIFICATION_COMPLETE",
+        message: auditMessageFor(outcome.recommendation),
+        bidderName: bidder.company,
+        bidderId: id,
+        tenderCode: bidder.tender.code,
+        score: outcome.score,
+        model: usedWorker ? WORKER_MODEL_LABEL : MODEL_LABEL,
+        officer: usedWorker ? "ATC AI Worker" : "Procurement Officer",
+      },
+    });
+  }
 
   const [detail, mappedAudit] = await Promise.all([
     fetchBidderDetail(id),

@@ -15,6 +15,7 @@ import { useAppStore } from "@/lib/store";
 import type { AuditEntry } from "@/lib/types";
 import { timeAgo, initials } from "@/lib/format";
 import { SidebarContent } from "./sidebar";
+import { AiWorkerStatus } from "./ai-worker-status";
 import { cn } from "@/lib/utils";
 
 function crumbFor(
@@ -131,6 +132,14 @@ export function Topbar() {
         >
           <Search className="size-4" />
         </button>
+
+        {/* AI worker status */}
+        <div className="hidden md:block">
+          <AiWorkerStatus />
+        </div>
+        <div className="md:hidden">
+          <AiWorkerStatus compact />
+        </div>
 
         {/* notifications */}
         <DropdownMenu open={bellOpen} onOpenChange={(o) => { setBellOpen(o); if (o) setUnseen(false); }}>

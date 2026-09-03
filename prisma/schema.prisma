@@ -29,6 +29,12 @@ model Bidder {
   company        String
   gstin          String
   pan            String
+  // Submission IDs consumed by the Python AI worker (strapi_client contract)
+  udyamId        String?
+  epfoCode       String?
+  esicCode       String?
+  dpiitNumber    String?
+  nsicNumber     String?
   status         String    @default("PENDING") // PENDING|PROCESSING|VERIFIED|MANUAL_REVIEW|REJECTED
   score          Int?
   risk           String? // LOW|MEDIUM|HIGH|CRITICAL
@@ -38,6 +44,7 @@ model Bidder {
   lastCheckedAt  DateTime?
   dataSource     String?
   failedChecks   Int       @default(0)
+  verificationResult Json? // raw JSON result persisted by the AI worker via the Strapi adapter
   checks         ComplianceCheck[]
   documents      BidderDocument[]
   auditEntries   AuditEntry[]
@@ -64,6 +71,22 @@ model BidderDocument {
   type       String
   size       String
   uploadedAt DateTime
+}
+
+// Simulated government registries consumed by the AI worker through the
+// Strapi-compatible adapter routes (gst-databases, pan-databases, ...).
+// `collection` mirrors the Strapi collection slug; filterKey/filterValue hold
+// the indexed field so the adapter can serve strapi_client equality filters.
+model GovRecord {
+  id          String   @id @default(cuid())
+  collection  String
+  filterKey   String
+  filterValue String
+  data        Json
+  createdAt   DateTime @default(now())
+
+  @@unique([collection, filterKey, filterValue])
+  @@index([collection, filterValue])
 }
 
 model AuditEntry {

@@ -44,6 +44,7 @@ import { ScoreRing } from "../score-ring";
 import { BidderDetailSkeleton } from "../skeletons";
 import { EmptyState } from "../empty-state";
 import { VerifyOverlay, type VerifyRun } from "../verify-overlay";
+import { AiDocScan } from "../ai-doc-scan";
 import { cn } from "@/lib/utils";
 
 function CheckIcon({ status }: { status: CheckStatus }) {
@@ -343,9 +344,12 @@ export function BidderDetailView({ bidderId }: { bidderId: string }) {
 
               {/* documents */}
               <section aria-label="Uploaded documents">
-                <Reveal className="mb-3 flex items-center gap-2">
-                  <FileText className="size-4 text-primary" />
-                  <h2 className="font-display text-2xl">Uploaded documents</h2>
+                <Reveal className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="size-4 text-primary" />
+                    <h2 className="font-display text-2xl">Uploaded documents</h2>
+                  </div>
+                  <AiDocScan />
                 </Reveal>
                 {bidder.documents.length === 0 ? (
                   <Reveal delay={0.05}>
