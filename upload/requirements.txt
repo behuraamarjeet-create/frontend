@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pymupdf
+pdf2image
+ollama
+pandas
+requests
+python-multipart
+pydantic
