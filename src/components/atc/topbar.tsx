@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/api";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, DEFAULT_VIEW } from "@/lib/store";
 import type { AuditEntry } from "@/lib/types";
 import { timeAgo, initials } from "@/lib/format";
 import { SidebarContent } from "./sidebar";
@@ -42,6 +42,8 @@ function crumbFor(
       return [{ label: "Verification Results", accent: true }];
     case "audit":
       return [{ label: "Audit Logs", accent: true }];
+    case "settings":
+      return [{ label: "Platform Settings", accent: true }];
     default:
       return [{ label: "Overview", accent: true }];
   }
@@ -54,6 +56,10 @@ export function Topbar() {
   const [navOpen, setNavOpen] = useState(false);
   const [entries, setEntries] = useState<AuditEntry[] | null>(null);
   const [unseen, setUnseen] = useState(true);
+
+  /* The AI worker capsule is a technical indicator — developers only.
+     Procurement officers never see engine internals. */
+  const isDeveloper = user?.role === "DEVELOPER";
 
   useEffect(() => {
     if (!bellOpen || entries) return;
@@ -133,13 +139,17 @@ export function Topbar() {
           <Search className="size-4" />
         </button>
 
-        {/* AI worker status */}
-        <div className="hidden md:block">
-          <AiWorkerStatus />
-        </div>
-        <div className="md:hidden">
-          <AiWorkerStatus compact />
-        </div>
+        {/* AI worker status — technical console only (developer role) */}
+        {isDeveloper && (
+          <>
+            <div className="hidden md:block">
+              <AiWorkerStatus />
+            </div>
+            <div className="md:hidden">
+              <AiWorkerStatus compact />
+            </div>
+          </>
+        )}
 
         {/* notifications */}
         <DropdownMenu open={bellOpen} onOpenChange={(o) => { setBellOpen(o); if (o) setUnseen(false); }}>
@@ -214,7 +224,7 @@ export function Topbar() {
 
         {/* user chip */}
         <button
-          onClick={() => navigate("home")}
+          onClick={() => navigate(user ? DEFAULT_VIEW[user.role] : "home")}
           className="flex min-h-10 items-center gap-2.5 rounded-full border border-border bg-card py-1.5 pr-3.5 pl-1.5 transition-colors hover:bg-muted"
         >
           <span className="flex size-7 items-center justify-center rounded-full bg-foreground text-[10px] font-semibold text-primary-foreground">

@@ -3,32 +3,61 @@
 import { motion } from "framer-motion";
 import {
   BadgeCheck,
+  Code2,
   FileText,
   Home,
   LogOut,
   ScrollText,
   Search,
+  Settings,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAppStore, type View } from "@/lib/store";
+import {
+  useAppStore,
+  DEFAULT_VIEW,
+  ROLE_VIEWS,
+  type View,
+} from "@/lib/store";
 import { Mark } from "./motion";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const NAV: { view: View; label: string; icon: typeof Home }[] = [
-  { view: "home", label: "Home", icon: Home },
-  { view: "search", label: "Tender Search", icon: Search },
-  { view: "tenders", label: "Tenders", icon: FileText },
-  { view: "verification", label: "Verification", icon: BadgeCheck },
-  { view: "audit", label: "Audit Logs", icon: ScrollText },
-];
+const ALL_NAV: Record<View, { view: View; label: string; icon: typeof Home }> = {
+  home: { view: "home", label: "Home", icon: Home },
+  search: { view: "search", label: "Tender Search", icon: Search },
+  tenders: { view: "tenders", label: "Tenders", icon: FileText },
+  tender: { view: "tender", label: "Tender Detail", icon: FileText },
+  bidder: { view: "bidder", label: "Bidder Detail", icon: FileText },
+  verification: {
+    view: "verification",
+    label: "Verification",
+    icon: BadgeCheck,
+  },
+  audit: { view: "audit", label: "Audit Logs", icon: ScrollText },
+  settings: { view: "settings", label: "Settings", icon: Settings },
+};
+
+/** Officer sees the operational workspace; developer sees only the technical pages. */
+const ROLE_NAV: Record<keyof typeof ROLE_VIEWS, View[]> = {
+  OFFICER: ["home", "search", "tenders", "verification", "audit"],
+  DEVELOPER: ["audit", "settings"],
+};
+
+const HEADING: Record<keyof typeof ROLE_VIEWS, string> = {
+  OFFICER: "Workspace",
+  DEVELOPER: "Navigation",
+};
 
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const view = useAppStore((s) => s.view);
   const navigate = useAppStore((s) => s.navigate);
   const user = useAppStore((s) => s.user);
   const signOut = useAppStore((s) => s.signOut);
+
+  const role = user?.role ?? "OFFICER";
+  const NAV = ROLE_NAV[role].map((v) => ALL_NAV[v]);
+  const isDeveloper = role === "DEVELOPER";
 
   const go = (v: View) => {
     navigate(v);
@@ -39,7 +68,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex h-full flex-col">
       {/* wordmark */}
       <button
-        onClick={() => go("home")}
+        onClick={() => go(DEFAULT_VIEW[role])}
         className="flex items-center gap-3 px-6 pt-6 pb-7 text-left"
       >
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card shadow-sm">
@@ -58,7 +87,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       {/* nav */}
       <nav className="flex-1 space-y-1 px-3" aria-label="Primary">
         <p className="px-3 pb-2 text-[10px] font-semibold tracking-[0.22em] text-muted-foreground/80 uppercase">
-          Workspace
+          {HEADING[role]}
         </p>
         {NAV.map(({ view: v, label, icon: Icon }) => {
           const active = view === v;
@@ -113,8 +142,16 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             {initials(user?.name ?? "Officer")}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-medium">
-              {user?.name ?? "Officer"}
+            <span className="flex items-center gap-1.5">
+              <span className="truncate text-[13px] font-medium">
+                {user?.name ?? "Officer"}
+              </span>
+              {isDeveloper && (
+                <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-border bg-muted px-1.5 py-px text-[9px] font-semibold tracking-wide text-muted-foreground uppercase">
+                  <Code2 className="size-2.5" />
+                  Dev
+                </span>
+              )}
             </span>
             <span className="block truncate text-[11px] text-muted-foreground">
               {user?.email ?? "officer@gov.in"}

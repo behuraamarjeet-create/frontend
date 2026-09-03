@@ -108,3 +108,24 @@ Stage Summary:
 - When user delivers Strapi: set STRAPI_URL=http://localhost:1337 (+ STRAPI_API_TOKEN) in mini-services/ai-worker/.env and restart worker — adapter routes become dormant, no code changes needed; bidder cuid ids pass through strapi_client's documentId/filters paths
 - To enable Gemini: put GEMINI_API_KEY in mini-services/ai-worker/.env and restart worker; status pill flips to green "Gemini 1.5 Flash"; /extract scan + AI summaries go live
 - Known notes: worker's requirements.txt was missing google-generativeai/python-dotenv (fixed, disclosed); create_mock_data.py's solar-comment/tender-id mismatch resolved in favor of comment intent; bidders seed all-PENDING — dashboards populate as verifications run (worker's /verify-all-bidders batch endpoint exists but frontend loops single-verify; List[int] typing there rejects cuids — swap to per-bidder calls is intentional until real Strapi numeric ids arrive)
+
+---
+Task ID: 4
+Agent: orchestrator (Z.ai Code)
+Task: Role-based access control — developer sees ONLY Settings + Audit Logs; procurement officer gets zero technical surface (no AI worker capsule, no settings); new developer Settings console
+
+Work Log:
+- store.ts: added "settings" View; RBAC constants ROLE_VIEWS (OFFICER: home/search/tenders/tender/bidder/verification/audit · DEVELOPER: settings/audit only) + DEFAULT_VIEW (OFFICER→home, DEVELOPER→settings) + isViewAllowed(); navigate/replace/back now clamp any disallowed target to the role's default; setUser lands each role on its own base and clears stale nav context; persisted aiMode preference (cloud/local/fallback) added to partialize
+- New GET /api/system/status: probes AI worker (/health via AI_WORKER_URL, 4s timeout → online/aiSource/gemini/version) + SQLite via $queryRaw SELECT 1 (latency ms); verified live: worker online template mode, DB online 2ms
+- New views/settings-view.tsx (developer console, warm-paper aesthetic): Demo/Hackathon Mode amber banner (exact user copy); System Status card with animated StatusDots + Recheck button (RefreshCw spin) and live tiles "AI Worker (FastAPI)" + "Strapi CMS / Database · Strapi-compatible adapter · SQLite · Xms"; AI Configuration card with 3 selectable mode cards (Cloud AI/Gemini, Local AI/Ollama, Fallback/Rule-only) — selection persists via store, Live badge computed from real worker health (cloud live when gemini key set, fallback live when worker offline, local "Not installed"); Government Database Connectors card: 9/9 available, scrollable max-h-96 Stagger list (GST, PAN, Udyam, EPFO, ESIC, Startup India DPIIT, NSIC, Blacklist, Bidder Registry) each with green dot + mono adapter path + "Simulated" pill + explainer footer about Strapi dialect passthrough
+- app-shell.tsx: renders SettingsView; role guard useEffect — if persisted user + stale disallowed view after reload, replace() to role default; effectiveView computed so no flash of disallowed content
+- sidebar.tsx: role-driven nav (OFFICER "Workspace": Home/Tender Search/Tenders/Verification/Audit Logs · DEVELOPER "Navigation": Audit Logs/Settings); wordmark goes to role default; DEV badge chip on developer user card
+- topbar.tsx: AiWorkerStatus capsule (full + compact) rendered ONLY when user.role === "DEVELOPER"; "Platform Settings" breadcrumb case; user chip navigates to role default
+- command-menu.tsx: pages filtered by ROLE_VIEWS; Tenders + Recently viewed groups officer-only; developer palette shows exactly Audit Logs + Platform Settings
+- Browser-verified E2E (1440px + 390px): officer → lands home, no capsule anywhere, palette/nav have zero technical entries; developer → lands settings, capsule "AI Worker · template mode" in topbar (compact dot on mobile), status tiles live, mode select toast works, audit opens, palette = 2 pages only; reload as developer snaps back to settings (guard); officer mobile drawer has no settings; lint clean; dev.log clean
+- Decisions: officers keep Audit Logs (operational trail of their decisions — not treated as technical); connectors listed honestly as the 9 real adapter routes (8 gov registries + bidder registry) labelled "9/9 available" to match user's screenshot
+
+Stage Summary:
+- RBAC complete client-side: developer = technical console (Settings + Audit Logs + AI capsule), officer = pure procurement workspace with no technical surface; all nav paths (sidebar, wordmark, chip, palette, back) clamp to role
+- Settings console ready for the real Strapi swap: /api/system/status will report the live CMS once STRAPI_URL points at it; AI mode cards reflect worker .env (GEMINI_API_KEY) state
+- Next: user sends Strapi backend (databases + auth) → repoint worker .env, replace adapter, wire real auth
