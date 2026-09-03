@@ -63,9 +63,9 @@ export function LoginView() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <div className="mx-auto grid w-full max-w-7xl flex-1 lg:grid-cols-[1.05fr_1fr]">
+      <div className="grid w-full flex-1 lg:grid-cols-[1.05fr_1fr]">
         {/* ——— Brand panel ——— */}
-        <div className="relative hidden overflow-hidden border-r border-border lg:flex lg:flex-col lg:justify-between lg:p-12">
+        <div className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12">
           {/* soft radial wash */}
           <div
             aria-hidden
@@ -124,8 +124,8 @@ export function LoginView() {
             </Reveal>
           </div>
 
-          {/* marquee */}
-          <div className="relative -mx-12 -mb-12 overflow-hidden border-t border-border py-4">
+          {/* marquee — full-bleed to the true left edge of the screen */}
+          <div className="relative -mx-12 -mb-12 overflow-hidden py-4">
             <div className="animate-marquee flex w-max items-center gap-8 pr-8">
               {[...MARQUEE, ...MARQUEE, ...MARQUEE, ...MARQUEE].map((w, i) => (
                 <span
@@ -338,14 +338,20 @@ export function LoginView() {
         </div>
       </div>
 
-      {/* sticky footer */}
-      <footer className="mt-auto border-t border-border">
-        <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-5 py-4 text-xs text-muted-foreground sm:flex-row sm:px-10">
-          <p className="flex items-center gap-1.5">
-            <Lock className="size-3.5" />
-            Secure procurement environment · All access is logged and audited
-          </p>
-          <p className="font-mono text-[11px]">© 2026 Government of India · Demo</p>
+      {/* sticky footer — capsule chip pinned bottom-left, no divider */}
+      <footer className="mt-auto">
+        <div className="flex w-full px-5 py-5 sm:px-10 lg:px-12">
+          <div className="inline-flex max-w-full flex-col gap-1 rounded-full border border-border bg-card/80 px-6 py-2.5 shadow-[0_1px_2px_oklch(0.245_0.014_105/0.04)] backdrop-blur">
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Lock className="size-3.5 shrink-0 text-ok" />
+              <span className="min-w-0">
+                Secure procurement environment · All access is logged and audited
+              </span>
+            </p>
+            <p className="pl-5 font-mono text-[11px] text-muted-foreground/80">
+              © 2026 Government of India · Demo
+            </p>
+          </div>
         </div>
       </footer>
     </div>

@@ -129,3 +129,20 @@ Stage Summary:
 - RBAC complete client-side: developer = technical console (Settings + Audit Logs + AI capsule), officer = pure procurement workspace with no technical surface; all nav paths (sidebar, wordmark, chip, palette, back) clamp to role
 - Settings console ready for the real Strapi swap: /api/system/status will report the live CMS once STRAPI_URL points at it; AI mode cards reflect worker .env (GEMINI_API_KEY) state
 - Next: user sends Strapi backend (databases + auth) → repoint worker .env, replace adapter, wire real auth
+
+---
+Task ID: login-fix-1
+Agent: Z.ai Code (main)
+Task: Fix login page layout (full-bleed left edge for marquee + brand bg, remove all dividers, capsule footer bottom-left) and re-verify RBAC (developer = Settings + Audit Logs only, officer = workspace with no AI worker capsule).
+
+Work Log:
+- Edited src/components/atc/login-view.tsx: removed mx-auto max-w-7xl centering from the login grid so the left brand panel and marquee start at the true left edge of the screen.
+- Removed border-r (mid vertical divider) from brand panel, border-t from marquee wrapper, border-t from footer.
+- Replaced footer with a rounded-full capsule chip pinned bottom-left containing "Secure procurement environment · All access is logged and audited" and "© 2026 Government of India · Demo" stacked one below another.
+- Verified in browser (agent-browser, 1920x1080): login page full-bleed left, no dividers, capsule footer; officer login → no AI worker capsule in topbar, workspace nav only; developer login → AI Worker capsule present, sidebar exactly Audit Logs + Settings.
+- bun run lint clean; dev.log shows only 200 responses, no runtime errors.
+
+Stage Summary:
+- Login page is now full-bleed to the left edge, divider-free, with capsule-style bottom-left footer.
+- RBAC confirmed working: technical surfaces (AI worker capsule, Settings) are developer-only; officer keeps operational workspace + audit feed.
+- Ready for next phase: Strapi backend integration.
