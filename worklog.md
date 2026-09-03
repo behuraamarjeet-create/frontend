@@ -146,3 +146,27 @@ Stage Summary:
 - Login page is now full-bleed to the left edge, divider-free, with capsule-style bottom-left footer.
 - RBAC confirmed working: technical surfaces (AI worker capsule, Settings) are developer-only; officer keeps operational workspace + audit feed.
 - Ready for next phase: Strapi backend integration.
+
+---
+Task ID: ux-polish-2
+Agent: Z.ai Code (main)
+Task: 7-point UX upgrade: sidebar collapse rail, profile popover, topbar redesign (theme + language buttons, wider search, removed user capsule), mobile-centered notifications, responsive home/verification/bidder views, smaller score ring, login footer capsule removal.
+
+Work Log:
+- globals.css: added full .dark OKLCH palette (warm charcoal + forest) for every token incl. sidebar/status/chart vars; grain overlay switches to screen blend in dark.
+- layout.tsx: wrapped app in next-themes ThemeProvider (class attribute, light default).
+- New theme-toggle.tsx (animated Sun/Moon, hydration-safe via useSyncExternalStore) + theme-provider.tsx.
+- New src/lib/i18n.ts: EN/HI dictionary + useT hook; store gained persisted `lang` + `collapsed` states.
+- sidebar.tsx: collapse toggle (PanelLeft icons), icon-only rail mode with titles, avatar-only footer when collapsed, Popover profile (name/email/department/location + sign-out, w-264 <= sidebar width, opens top/right).
+- app-shell.tsx: aside width animates 280px <-> 76px; shell is now full-bleed (removed 1560px cap).
+- topbar.tsx: removed user chip; added ThemeToggle + language dropdown (EN/hindi with check + toast); search widened to w-60/lg:72/xl:80; notifications use useIsMobile -> align center + fluid width on mobile.
+- login API + SessionUser type: added location field (New Delhi / Bengaluru).
+- Responsive root-cause fix: grid min-width:auto overflow (scrollWidth 487 > 390) - added min-w-0/minmax(0,fr) to home + bidder detail grids; restructured home/verification rows so status wraps below title on mobile; ScoreRing size-aware text, 112px in bidder detail.
+- login-view.tsx: removed bottom-left copyright capsule; marquee now flush with bottom edge.
+- next.config.ts: devIndicators:false so the dev badge never covers the profile avatar.
+- Verified in browser: desktop 1920 (light + dark, collapse, popover, Hindi), mobile 390 (centered notifications, no overflow sw=vw, clean row wrapping); lint clean; dev.log error-free.
+
+Stage Summary:
+- All 7 requested items implemented and browser-verified in light + dark + Hindi.
+- Preferences (theme via next-themes, lang, sidebar collapsed) persist across sessions.
+- Ready for Strapi backend integration phase.

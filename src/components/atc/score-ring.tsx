@@ -63,7 +63,10 @@ export function ScoreRing({
         <CountUp
           to={score}
           delay={0.25}
-          className="text-4xl font-semibold tracking-tight"
+          className={cn(
+            "font-semibold tracking-tight",
+            size >= 140 ? "text-4xl" : size >= 110 ? "text-3xl" : "text-2xl"
+          )}
         />
         <span className="text-xs text-muted-foreground">{label}</span>
       </div>

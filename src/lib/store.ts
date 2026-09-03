@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { SessionUser } from "./types";
+import type { Lang } from "./i18n";
 
 export type View =
   | "home"
@@ -71,7 +72,11 @@ interface AppState {
   recent: RecentTender[];
   history: NavEntry[];
   aiMode: AiMode;
+  collapsed: boolean;
+  lang: Lang;
 
+  toggleCollapsed: () => void;
+  setLang: (l: Lang) => void;
   finishPreload: () => void;
   setUser: (u: SessionUser | null) => void;
   signOut: () => void;
@@ -98,6 +103,12 @@ export const useAppStore = create<AppState>()(
       recent: [],
       history: [],
       aiMode: "cloud",
+      collapsed: false,
+      lang: "en",
+
+      toggleCollapsed: () => set((s) => ({ collapsed: !s.collapsed })),
+
+      setLang: (lang) => set({ lang }),
 
       finishPreload: () => {
         const { user } = get();
@@ -213,7 +224,13 @@ export const useAppStore = create<AppState>()(
     {
       name: "atc-session",
       storage: createJSONStorage(() => localStorage),
-      partialize: (s) => ({ user: s.user, recent: s.recent, aiMode: s.aiMode }),
+      partialize: (s) => ({
+        user: s.user,
+        recent: s.recent,
+        aiMode: s.aiMode,
+        collapsed: s.collapsed,
+        lang: s.lang,
+      }),
     }
   )
 );

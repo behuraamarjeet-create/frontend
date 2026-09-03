@@ -122,6 +122,7 @@ export interface SessionUser {
   email: string;
   role: "OFFICER" | "DEVELOPER";
   department: string;
+  location?: string; // e.g. "New Delhi, India"
 }
 
 // ---- API response envelopes ----

@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
     email,
     role: isDeveloper ? "DEVELOPER" : "OFFICER",
     department: isDeveloper ? "Platform Engineering" : "Dept. of Procurement",
+    location: isDeveloper ? "Bengaluru, India" : "New Delhi, India",
   };
 
   await db.auditEntry.create({

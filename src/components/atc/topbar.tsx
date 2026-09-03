@@ -2,20 +2,32 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Bell, Search, ChevronRight } from "lucide-react";
+import {
+  Bell,
+  Check,
+  ChevronRight,
+  Languages,
+  Menu,
+  Search,
+} from "lucide-react";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { api } from "@/lib/api";
-import { useAppStore, DEFAULT_VIEW } from "@/lib/store";
+import { toast } from "sonner";
+import { useAppStore } from "@/lib/store";
 import type { AuditEntry } from "@/lib/types";
-import { timeAgo, initials } from "@/lib/format";
+import { timeAgo } from "@/lib/format";
+import { useT, LANG_LABEL, type Lang } from "@/lib/i18n";
 import { SidebarContent } from "./sidebar";
 import { AiWorkerStatus } from "./ai-worker-status";
+import { ThemeToggle } from "./theme-toggle";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 function crumbFor(
@@ -50,12 +62,14 @@ function crumbFor(
 }
 
 export function Topbar() {
-  const { view, tenderLabel, bidderLabel, navigate, setCommandOpen, user } =
+  const { view, tenderLabel, bidderLabel, navigate, setCommandOpen, user, lang, setLang } =
     useAppStore();
   const [bellOpen, setBellOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [entries, setEntries] = useState<AuditEntry[] | null>(null);
   const [unseen, setUnseen] = useState(true);
+  const isMobile = useIsMobile();
+  const t = useT();
 
   /* The AI worker capsule is a technical indicator — developers only.
      Procurement officers never see engine internals. */
@@ -79,7 +93,7 @@ export function Topbar() {
           <SheetTrigger asChild>
             <button
               className="flex size-10 items-center justify-center rounded-xl border border-border bg-card text-foreground transition-colors hover:bg-muted lg:hidden"
-              aria-label="Open navigation"
+              aria-label={t("open_nav")}
             >
               <Menu className="size-4.5" />
             </button>
@@ -120,21 +134,21 @@ export function Topbar() {
           </ol>
         </nav>
 
-        {/* command trigger */}
+        {/* command trigger — slightly wider */}
         <button
           onClick={() => setCommandOpen(true)}
-          className="hidden min-h-10 items-center gap-2.5 rounded-full border border-border bg-card py-2 pr-2.5 pl-4 text-sm text-muted-foreground transition-all hover:border-foreground/25 hover:text-foreground sm:flex"
+          className="hidden min-h-10 w-60 items-center gap-2.5 rounded-full border border-border bg-card py-2 pr-2.5 pl-4 text-sm text-muted-foreground transition-all hover:border-foreground/25 hover:text-foreground lg:flex lg:w-72 xl:w-80"
         >
           <Search className="size-3.5" />
-          Search…
-          <kbd className="rounded-md border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+          {t("search_ph")}
+          <kbd className="ml-auto rounded-md border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
             ⌘K
           </kbd>
         </button>
         <button
           onClick={() => setCommandOpen(true)}
           className="flex size-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:text-foreground sm:hidden"
-          aria-label="Search"
+          aria-label={t("search_aria")}
         >
           <Search className="size-4" />
         </button>
@@ -151,12 +165,52 @@ export function Topbar() {
           </>
         )}
 
-        {/* notifications */}
+        {/* light / dark mode */}
+        <ThemeToggle />
+
+        {/* language */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              aria-label={t("language")}
+              title={t("language")}
+              className="flex size-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Languages className="size-4" strokeWidth={1.75} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40 p-1.5">
+            <DropdownMenuLabel className="px-2 py-1.5 text-xs font-medium tracking-wide text-muted-foreground">
+              {t("language")}
+            </DropdownMenuLabel>
+            {(["en", "hi"] as Lang[]).map((l) => (
+              <DropdownMenuItem
+                key={l}
+                onClick={() => {
+                  if (l === lang) return;
+                  setLang(l);
+                  toast.success(LANG_LABEL[l], { description: t("lang_updated") });
+                }}
+                className={cn(
+                  "justify-between text-[13px]",
+                  lang === l && "bg-muted font-medium"
+                )}
+              >
+                {LANG_LABEL[l]}
+                {lang === l && <Check className="size-3.5 text-primary" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="hidden h-6 w-px bg-border sm:block" />
+
+        {/* notifications — centered sheet-like popup on mobile */}
         <DropdownMenu open={bellOpen} onOpenChange={(o) => { setBellOpen(o); if (o) setUnseen(false); }}>
           <DropdownMenuTrigger asChild>
             <button
               className="relative flex size-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:text-foreground"
-              aria-label="Notifications"
+              aria-label={t("notifications")}
             >
               <Bell className="size-4" />
               {unseen && (
@@ -167,9 +221,13 @@ export function Topbar() {
               )}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 p-1.5">
+          <DropdownMenuContent
+            align={isMobile ? "center" : "end"}
+            collisionPadding={12}
+            className={cn("p-1.5", isMobile ? "w-[min(22rem,calc(100vw-1.5rem))]" : "w-80")}
+          >
             <DropdownMenuLabel className="px-2 py-1.5 text-xs font-medium tracking-wide text-muted-foreground">
-              Recent activity
+              {t("recent_activity")}
             </DropdownMenuLabel>
             {entries === null && (
               <div className="space-y-2 p-2">
@@ -180,7 +238,7 @@ export function Topbar() {
             )}
             {entries?.length === 0 && (
               <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-                Nothing yet.
+                {t("nothing_yet")}
               </p>
             )}
             {entries && entries.length > 0 && (
@@ -215,28 +273,10 @@ export function Topbar() {
               onClick={() => { setBellOpen(false); navigate("audit"); }}
               className="mt-1 w-full rounded-lg border border-border py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              View full audit log
+              {t("view_audit_log")}
             </button>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        <div className="hidden h-6 w-px bg-border sm:block" />
-
-        {/* user chip */}
-        <button
-          onClick={() => navigate(user ? DEFAULT_VIEW[user.role] : "home")}
-          className="flex min-h-10 items-center gap-2.5 rounded-full border border-border bg-card py-1.5 pr-3.5 pl-1.5 transition-colors hover:bg-muted"
-        >
-          <span className="flex size-7 items-center justify-center rounded-full bg-foreground text-[10px] font-semibold text-primary-foreground">
-            {initials(user?.name ?? "Officer")}
-          </span>
-          <span className="hidden text-left leading-tight md:block">
-            <span className="block text-xs font-semibold">{user?.name ?? "Officer"}</span>
-            <span className="block text-[10px] text-muted-foreground">
-              {user?.department ?? "Dept. of Procurement"}
-            </span>
-          </span>
-        </button>
       </div>
     </header>
   );

@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  /* keep the bottom-left corner clear for the sidebar profile */
+  devIndicators: false,
 };
 
 export default nextConfig;

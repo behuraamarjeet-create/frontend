@@ -198,15 +198,15 @@ export function BidderDetailView({ bidderId }: { bidderId: string }) {
       ) : (
         <>
           {/* ——— Score + summary ——— */}
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Reveal className="card-hairline flex flex-col items-center justify-center p-6">
-              <ScoreRing score={bidder.score ?? 0} />
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+            <Reveal className="card-hairline flex flex-col items-center justify-center p-5">
+              <ScoreRing score={bidder.score ?? 0} size={112} stroke={9} />
               <p className="mt-3 text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
                 Compliance score
               </p>
             </Reveal>
 
-            <Reveal delay={0.07} className="card-hairline flex flex-col justify-center gap-5 p-6 lg:col-span-2">
+            <Reveal delay={0.07} className="card-hairline flex flex-col justify-center gap-5 p-6">
               <div className="flex flex-wrap items-center gap-2.5">
                 {bidder.risk && <StatusPill kind={bidder.risk} className="scale-105" />}
                 {bidder.recommendation && (
@@ -248,8 +248,8 @@ export function BidderDetailView({ bidderId }: { bidderId: string }) {
           </div>
 
           {/* ——— Main grid ——— */}
-          <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-            <div className="space-y-6">
+          <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+            <div className="min-w-0 space-y-6">
               {/* checklist */}
               <section aria-label="Compliance checklist">
                 <Reveal className="mb-3 flex items-center gap-2">

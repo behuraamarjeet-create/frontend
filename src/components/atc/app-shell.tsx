@@ -6,6 +6,7 @@ import { useAppStore, isViewAllowed, DEFAULT_VIEW, type View } from "@/lib/store
 import { SidebarContent } from "./sidebar";
 import { Topbar } from "./topbar";
 import { CommandMenu } from "./command-menu";
+import { cn } from "@/lib/utils";
 import { HomeView } from "./views/home-view";
 import { SearchView } from "./views/search-view";
 import { TendersView } from "./views/tenders-view";
@@ -16,7 +17,7 @@ import { AuditView } from "./views/audit-view";
 import { SettingsView } from "./views/settings-view";
 
 export function AppShell() {
-  const { view, tenderId, bidderId, user, replace } = useAppStore();
+  const { view, tenderId, bidderId, user, replace, collapsed } = useAppStore();
 
   /* Role guard — if the session ever lands on a view its role cannot
      access (e.g. after a page reload restores a stale view), snap back
@@ -34,10 +35,15 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <div className="mx-auto flex w-full max-w-[1560px] flex-1">
-        {/* desktop sidebar */}
-        <aside className="sticky top-0 hidden h-screen w-[280px] shrink-0 border-r border-border lg:block">
-          <SidebarContent />
+      <div className="flex w-full flex-1">
+        {/* desktop sidebar — collapsible icon rail */}
+        <aside
+          className={cn(
+            "sticky top-0 hidden h-screen shrink-0 border-r border-border transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:block",
+            collapsed ? "w-[76px]" : "w-[280px]"
+          )}
+        >
+          <SidebarContent collapsible />
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">

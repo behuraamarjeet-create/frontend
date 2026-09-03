@@ -337,23 +337,6 @@ export function LoginView() {
           </div>
         </div>
       </div>
-
-      {/* sticky footer — capsule chip pinned bottom-left, no divider */}
-      <footer className="mt-auto">
-        <div className="flex w-full px-5 py-5 sm:px-10 lg:px-12">
-          <div className="inline-flex max-w-full flex-col gap-1 rounded-full border border-border bg-card/80 px-6 py-2.5 shadow-[0_1px_2px_oklch(0.245_0.014_105/0.04)] backdrop-blur">
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Lock className="size-3.5 shrink-0 text-ok" />
-              <span className="min-w-0">
-                Secure procurement environment · All access is logged and audited
-              </span>
-            </p>
-            <p className="pl-5 font-mono text-[11px] text-muted-foreground/80">
-              © 2026 Government of India · Demo
-            </p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

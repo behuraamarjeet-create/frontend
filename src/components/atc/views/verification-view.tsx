@@ -151,22 +151,24 @@ export function VerificationView() {
                   }
                   className="card-hairline card-hairline-hover group flex w-full flex-col gap-4 p-4 text-left sm:flex-row sm:items-center sm:gap-5"
                 >
-                  <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-muted/60 text-muted-foreground transition-colors group-hover:border-primary/30 group-hover:text-primary">
-                    <Building2 className="size-5" strokeWidth={1.6} />
+                  <span className="flex min-w-0 items-start gap-3.5 sm:flex-1 sm:items-center sm:gap-5">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-border bg-muted/60 text-muted-foreground transition-colors group-hover:border-primary/30 group-hover:text-primary">
+                      <Building2 className="size-5" strokeWidth={1.6} />
+                    </span>
+
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[15px] font-medium tracking-tight">
+                        {r.company}
+                      </span>
+                      <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                        <span className="shrink-0 font-mono">{r.tenderCode}</span>
+                        <span aria-hidden className="shrink-0">·</span>
+                        <span className="min-w-0 truncate">{r.tenderTitle}</span>
+                      </span>
+                    </span>
                   </span>
 
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[15px] font-medium tracking-tight">
-                      {r.company}
-                    </span>
-                    <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-                      <span className="font-mono">{r.tenderCode}</span>
-                      <span aria-hidden>·</span>
-                      <span className="truncate">{r.tenderTitle}</span>
-                    </span>
-                  </span>
-
-                  <span className="flex items-center gap-5 sm:justify-end">
+                  <span className="flex items-center justify-between gap-4 sm:justify-end sm:gap-5">
                     <span className="text-right">
                       <span
                         className={cn(

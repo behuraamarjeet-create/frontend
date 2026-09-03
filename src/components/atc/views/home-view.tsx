@@ -111,9 +111,9 @@ export function HomeView() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         {/* tenders in review */}
-        <section aria-label="Tenders in review">
+        <section aria-label="Tenders in review" className="min-w-0">
           <Reveal className="mb-3 flex items-end justify-between">
             <h2 className="font-display text-2xl">Tenders in review</h2>
             <button
@@ -142,22 +142,24 @@ export function HomeView() {
                       onClick={() =>
                         navigate("tender", { tenderId: t.id, tenderLabel: t.code })
                       }
-                      className="card-hairline card-hairline-hover group flex w-full flex-row items-start gap-3.5 p-4 text-left sm:items-center sm:gap-4"
+                      className="card-hairline card-hairline-hover group flex w-full flex-col gap-3 p-4 text-left sm:flex-row sm:items-center sm:gap-4"
                     >
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/60 text-muted-foreground transition-colors group-hover:border-primary/30 group-hover:text-primary">
-                        <Building2 className="size-4.5" strokeWidth={1.75} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium">
-                          {t.title}
+                      <span className="flex min-w-0 items-start gap-3.5 sm:flex-1 sm:items-center sm:gap-4">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/60 text-muted-foreground transition-colors group-hover:border-primary/30 group-hover:text-primary">
+                          <Building2 className="size-4.5" strokeWidth={1.75} />
                         </span>
-                        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                          <span className="font-mono">{t.code}</span>
-                          <span aria-hidden>·</span>
-                          <span className="truncate">{t.department}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium">
+                            {t.title}
+                          </span>
+                          <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                            <span className="shrink-0 font-mono">{t.code}</span>
+                            <span aria-hidden className="shrink-0">·</span>
+                            <span className="min-w-0 truncate">{t.department}</span>
+                          </span>
                         </span>
                       </span>
-                      <span className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1.5">
+                      <span className="flex items-center justify-between gap-3 pl-[54px] sm:flex-col sm:items-end sm:justify-end sm:gap-1.5 sm:pl-0">
                         <StatusPill kind={t.status} />
                         <span
                           className={cn(
@@ -181,7 +183,7 @@ export function HomeView() {
         </section>
 
         {/* activity */}
-        <section aria-label="Recent activity">
+        <section aria-label="Recent activity" className="min-w-0">
           <Reveal className="mb-3 flex items-end justify-between">
             <h2 className="font-display text-2xl">Latest activity</h2>
             <button
