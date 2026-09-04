@@ -52,6 +52,9 @@
 
 :root {
   --radius: 0.75rem;
+  --font-geist-sans: Arial, Helvetica, sans-serif;
+  --font-geist-mono: "Cascadia Mono", Consolas, monospace;
+  --font-instrument: Georgia, "Times New Roman", serif;
 
   /* ——— Warm paper · ink · forest ——— */
   --background: oklch(0.977 0.006 95);

@@ -34,6 +34,7 @@ export interface VerificationOutcome {
   risk: RiskLevel;
   recommendation: Recommendation;
   aiSummary: string;
+  aiSource?: string;
   confidence: number;
   lastCheckedAt: Date;
   dataSource: string;

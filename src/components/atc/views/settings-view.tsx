@@ -24,6 +24,8 @@ interface SystemStatus {
     aiSource: string | null;
     version: string | null;
     gemini: boolean;
+    ollama?: boolean;
+    ollamaModel?: string | null;
   };
   database: {
     online: boolean;
@@ -122,18 +124,38 @@ export function SettingsView() {
 
   const worker = status?.aiWorker;
   const cloudLive = !!worker?.online && worker.gemini;
+  const localLive = !!worker?.online && !!worker.ollama;
   const fallbackLive = !!worker && !worker.online;
-  const localLive = false; // Ollama is not installed in this environment
 
-  const pickMode = (m: AiMode) => {
+  const pickMode = async (m: AiMode) => {
     setAiMode(m);
     const labels: Record<AiMode, string> = {
-      cloud: "Cloud AI — Gemini Flash API",
-      local: "Local AI — Ollama",
+      cloud: "Cloud AI — Gemini 3.6 Flash",
+      local: `Local AI — Ollama (${worker?.ollamaModel ?? "qwen3:14b"})`,
       fallback: "Fallback — rule-only mode",
     };
+
+    try {
+      const res = await fetch("/api/system/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: m === "local" ? "ollama" : m === "cloud" ? "gemini" : "auto",
+        }),
+      });
+      if (res.ok) {
+        void recheck();
+        toast.success("AI Mode Switched", {
+          description: `Active Engine set to ${labels[m]}.`,
+        });
+        return;
+      }
+    } catch {
+      // ignore
+    }
+
     toast.success("AI mode preference saved", {
-      description: `${labels[m]} will drive extraction & recommendations once the matching engine is connected.`,
+      description: `${labels[m]} selected.`,
     });
   };
 
@@ -149,12 +171,12 @@ export function SettingsView() {
       id: "cloud",
       icon: Cloud,
       title: "Cloud AI",
-      sub: "Gemini Flash API",
+      sub: "Gemini 3.6 Flash",
       live: cloudLive,
       note: worker
         ? worker.online
           ? worker.gemini
-            ? "Summaries & extraction live"
+            ? "Summaries & extraction live via Google API"
             : "Waiting for GEMINI_API_KEY in worker .env"
           : "Worker offline — unreachable"
         : "Checking…",
@@ -163,9 +185,15 @@ export function SettingsView() {
       id: "local",
       icon: Laptop,
       title: "Local AI",
-      sub: "Local LLM (Ollama)",
+      sub: `Local LLM (Ollama: ${worker?.ollamaModel ?? "qwen3:14b"})`,
       live: localLive,
-      note: "Not installed in this environment",
+      note: worker
+        ? worker.online
+          ? worker.ollama
+            ? `Active on localhost:11434 (${worker.ollamaModel ?? "qwen3:14b"})`
+            : "Click to switch active engine to Ollama"
+          : "Worker offline"
+        : "Checking…",
     },
     {
       id: "fallback",

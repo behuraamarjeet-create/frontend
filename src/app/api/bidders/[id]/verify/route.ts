@@ -10,6 +10,12 @@ import {
   type VerificationOutcome,
 } from "@/lib/verification";
 import { runAiWorkerVerification, WORKER_MODEL_LABEL } from "@/lib/ai-worker";
+import {
+  createStrapiVerificationLog,
+  getStrapiBidder,
+  updateStrapiBidder,
+} from "@/lib/strapi";
+import type { AuditEntry } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +27,89 @@ export async function POST(
 ) {
   const { id } = await params;
 
+  // 1. Try resolving as Strapi bidder first
+  const strapiBidder = await getStrapiBidder(id).catch(() => null);
+
+  if (strapiBidder) {
+    // Optimistically set to Processing in Strapi
+    await updateStrapiBidder(id, { verificationStatus: "Processing" }).catch(() => null);
+
+    let outcome: VerificationOutcome;
+    let usedWorker = false;
+    try {
+      outcome = await runAiWorkerVerification(id);
+      usedWorker = true;
+    } catch (err) {
+      console.warn(
+        "[verify] AI worker error or unavailable for Strapi bidder, using simulated verification:",
+        err instanceof Error ? err.message : err
+      );
+      outcome = await runVerificationForBidder(id);
+      outcome.dataSource = "LOCAL_ENGINE_FALLBACK";
+
+      const statusByRec: Record<string, string> = {
+        QUALIFY: "Verified",
+        DISQUALIFY: "Rejected",
+        CLARIFY: "Manual Review",
+      };
+      await updateStrapiBidder(id, {
+        verificationStatus: statusByRec[outcome.recommendation] ?? "Manual Review",
+        complianceScore: outcome.score,
+        riskLevel:
+          outcome.risk === "LOW"
+            ? "Low"
+            : outcome.risk === "MEDIUM"
+              ? "Medium"
+              : outcome.risk === "HIGH"
+                ? "High"
+                : "Critical",
+        aiRecommendation: outcome.aiSummary,
+        lastVerifiedAt: new Date().toISOString(),
+        verificationResult: outcome,
+      }).catch(() => null);
+
+      await createStrapiVerificationLog(
+        id,
+        `Verification complete — ${outcome.recommendation}`,
+        {
+          score: outcome.score,
+          riskLevel:
+            outcome.risk === "LOW"
+              ? "Low"
+              : outcome.risk === "MEDIUM"
+                ? "Medium"
+                : "High",
+          aiSource: outcome.aiSource ?? (usedWorker ? "AI Worker" : "Simulated Engine"),
+          detailsLog: outcome as unknown as Record<string, unknown>,
+        }
+      ).catch(() => null);
+    }
+
+    const detail = await getStrapiBidder(id);
+    const resolvedModel = outcome.aiSource
+      ? `AI Worker · ${outcome.aiSource}`
+      : usedWorker
+        ? WORKER_MODEL_LABEL
+        : MODEL_LABEL;
+
+    const audit: AuditEntry = {
+      id: `audit-${Date.now()}`,
+      action: "VERIFICATION_COMPLETE",
+      message: auditMessageFor(outcome.recommendation),
+      bidderName: detail?.company ?? strapiBidder.company,
+      bidderId: id,
+      tenderCode: detail?.tender?.code ?? strapiBidder.tender.code,
+      decision: outcome.recommendation,
+      score: outcome.score,
+      model: resolvedModel,
+      officer: usedWorker ? "ATC AI Worker" : "Procurement Officer",
+      createdAt: new Date().toISOString(),
+    };
+
+    return NextResponse.json({ bidder: detail ?? strapiBidder, audit });
+  }
+
+  // 2. Fallback to Prisma SQLite db.bidder
   const bidder = await db.bidder.findUnique({
     where: { id },
     include: { tender: { select: { code: true } } },
@@ -29,9 +118,6 @@ export async function POST(
     return NextResponse.json({ error: "Bidder not found." }, { status: 404 });
   }
 
-  // Show a visible processing state while the AI worker runs the pipeline:
-  // fetch bidder → query 8 simulated gov registries → rule engine → score →
-  // AI summary → persist (via the Strapi-compatible adapter) → audit log.
   await db.bidder.update({ where: { id }, data: { status: "PROCESSING" } });
 
   let outcome: VerificationOutcome;
@@ -48,15 +134,10 @@ export async function POST(
     outcome.dataSource = "LOCAL_ENGINE_FALLBACK";
   }
 
-  // Small floor so the PROCESSING state is perceivable in tables/badges.
-  await new Promise((resolve) => setTimeout(resolve, 600));
-
   await persistVerificationResult(id, outcome);
 
   let audit;
   if (usedWorker) {
-    // The worker already persisted the audit event through the Strapi-compatible
-    // adapter (POST /api/verification-logs) before responding — reuse it.
     audit = await db.auditEntry.findFirst({
       where: { bidderId: id, action: "VERIFICATION_COMPLETE" },
       orderBy: { createdAt: "desc" },
@@ -71,7 +152,11 @@ export async function POST(
         bidderId: id,
         tenderCode: bidder.tender.code,
         score: outcome.score,
-        model: usedWorker ? WORKER_MODEL_LABEL : MODEL_LABEL,
+        model: outcome.aiSource
+          ? `AI Worker · ${outcome.aiSource}`
+          : usedWorker
+            ? WORKER_MODEL_LABEL
+            : MODEL_LABEL,
         officer: usedWorker ? "ATC AI Worker" : "Procurement Officer",
       },
     });

@@ -15,7 +15,7 @@ import type { VerificationOutcome, VerificationCheckResult } from "./verificatio
 export const AI_WORKER_URL =
   process.env.AI_WORKER_URL ?? "http://localhost:3010";
 
-export const WORKER_MODEL_LABEL = "AI Worker · Gemini 1.5 Flash";
+export const WORKER_MODEL_LABEL = "AI Worker · Gemini 3.6 Flash";
 
 // ---- raw worker result shapes (mirrors verification_pipeline.py) ----
 
@@ -43,6 +43,7 @@ export interface WorkerVerificationResult {
     severity: string;
   }[];
   aiSummary?: string;
+  aiSource?: string;
   confidence?: number;
   verifiedAt?: string;
   verificationMode?: string;
@@ -172,6 +173,7 @@ export function mapWorkerResult(
     aiSummary:
       result.aiSummary ??
       "The AI worker did not return a summary for this verification.",
+    aiSource: result.aiSource,
     confidence: typeof result.confidence === "number" ? result.confidence : 0,
     lastCheckedAt: result.verifiedAt ? new Date(result.verifiedAt) : new Date(),
     dataSource: result.verificationMode ?? "SIMULATED_GOV_DATABASE",
@@ -188,24 +190,43 @@ export function mapWorkerResult(
 export async function runAiWorkerVerification(
   bidderId: string
 ): Promise<VerificationOutcome> {
-  const res = await fetch(`${AI_WORKER_URL}/verify-bidder/${bidderId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-    signal: AbortSignal.timeout(150000),
-  });
+  const candidateUrls = Array.from(
+    new Set(
+      [
+        process.env.AI_WORKER_URL,
+        "http://localhost:8000",
+        "http://localhost:3010",
+      ].filter(Boolean) as string[]
+    )
+  );
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`AI worker responded ${res.status}: ${text.slice(0, 300)}`);
+  let lastError: Error | null = null;
+  for (const baseUrl of candidateUrls) {
+    try {
+      const res = await fetch(`${baseUrl}/verify-bidder/${bidderId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        signal: AbortSignal.timeout(90000),
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`AI worker responded ${res.status}: ${text.slice(0, 300)}`);
+      }
+
+      const data = (await res.json()) as WorkerVerificationResult;
+      if (data.error) {
+        throw new Error(`AI worker error: ${data.error}`);
+      }
+      if (!data.checks || typeof data.checks !== "object") {
+        throw new Error("AI worker returned no checks payload");
+      }
+      return mapWorkerResult(data);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+    }
   }
 
-  const data = (await res.json()) as WorkerVerificationResult;
-  if (data.error) {
-    throw new Error(`AI worker error: ${data.error}`);
-  }
-  if (!data.checks || typeof data.checks !== "object") {
-    throw new Error("AI worker returned no checks payload");
-  }
-  return mapWorkerResult(data);
+  throw lastError ?? new Error("All AI worker candidate endpoints failed");
 }

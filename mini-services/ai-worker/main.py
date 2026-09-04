@@ -19,11 +19,18 @@ if not GEMINI_API_KEY:
     print("WARNING: GEMINI_API_KEY not found. Add it to /ai-worker/.env")
 
 # Initialize Gemini
+model = None
+ACTIVE_MODEL_NAME = "Not Configured"
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash")  # Fixed model name
-else:
-    model = None
+    for model_candidate in ["gemini-3.6-flash", "gemini-flash-latest", "gemini-flash-lite-latest"]:
+        try:
+            model = genai.GenerativeModel(model_candidate)
+            ACTIVE_MODEL_NAME = model_candidate
+            print(f"INFO: Successfully initialized Gemini model: {model_candidate}")
+            break
+        except Exception as e:
+            print(f"WARNING: Could not initialize {model_candidate}: {e}")
 
 app = FastAPI(title="AI Tender Compliance Worker", version="1.0.0")
 
